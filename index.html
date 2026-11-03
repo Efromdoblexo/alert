@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>doblexo Staff Alert</title>
+<style>
+  :root{
+    --blue:#0118bd; --pink:#FA7DE1; --bg:#ffffff; --text:#0b0b0b;
+    --muted:#3a3a3a; --err:#a00018; --err-bg:#fff0f2; --ok:#05652a; --ok-bg:#e9f8ee;
+    --focus:#ff9e00;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;background:var(--bg);color:var(--text)}
+  body{font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;font-size:22px;line-height:1.4}
+  button,input,textarea{font:inherit;color:inherit}
+  :focus-visible{outline:5px solid var(--focus);outline-offset:3px}
+
+  header{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:16px 24px;border-bottom:4px solid var(--blue)}
+  .logo{font-size:36px;font-weight:800;color:var(--blue);text-decoration:none}
+  .home{display:inline-flex;align-items:center;min-height:64px;padding:0 28px;border-radius:16px;background:var(--blue);color:#fff;font-weight:800;font-size:24px;text-decoration:none}
+  main{max-width:900px;margin:0 auto;padding:20px 24px 48px}
+  h1{font-size:40px;margin:8px 0 20px;color:var(--blue)}
+
+  fieldset{border:0;margin:0 0 28px;padding:0}
+  legend,label.lbl{display:block;font-size:28px;font-weight:800;margin-bottom:12px}
+  .req{color:var(--err);font-weight:700;font-size:20px}
+  .choices{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  .choice{position:relative}
+  .choice input{position:absolute;opacity:0;width:1px;height:1px}
+  .choice span{display:flex;align-items:center;gap:14px;min-height:96px;padding:16px 20px;border:4px solid var(--blue);border-radius:18px;font-weight:700;font-size:24px;cursor:pointer;background:#fff}
+  .choice span::before{content:"";flex:none;width:32px;height:32px;border:4px solid var(--blue);border-radius:50%;background:#fff}
+  .choice input:checked + span{background:var(--blue);color:#fff}
+  .choice input:checked + span::before{background:var(--pink);border-color:#fff;box-shadow:inset 0 0 0 5px var(--blue)}
+  .choice input:focus-visible + span{outline:5px solid var(--focus);outline-offset:3px}
+
+  .field{margin-bottom:28px}
+  textarea,input[type=text]{width:100%;border:4px solid var(--text);border-radius:14px;padding:16px;font-size:24px;background:#fff}
+  textarea{min-height:150px;resize:vertical}
+  .hint{color:var(--muted);font-size:20px;margin:-4px 0 10px}
+  .fielderr{color:var(--err);font-weight:700;margin-top:8px}
+  .invalid{border-color:var(--err)!important}
+
+  .send{width:100%;min-height:110px;border:0;border-radius:22px;background:var(--blue);color:#fff;font-size:40px;font-weight:800;cursor:pointer}
+  .send:active{transform:scale(.98)}
+  .send[disabled]{background:#5a5a5a;cursor:wait}
+
+  .banner{border-radius:18px;padding:20px 24px;margin-bottom:24px;font-size:26px;font-weight:700;border:4px solid}
+  .banner.ok{background:var(--ok-bg);color:var(--ok);border-color:var(--ok);font-size:36px;text-align:center}
+  .banner.err{background:var(--err-bg);color:var(--err);border-color:var(--err)}
+  .banner p{margin:6px 0 0;font-weight:500;font-size:22px;color:var(--text)}
+  .retry{margin-top:14px;min-height:72px;padding:0 32px;border-radius:16px;border:0;background:var(--err);color:#fff;font-weight:800;font-size:26px;cursor:pointer}
+
+  .linkbtn{background:none;border:0;color:var(--blue);text-decoration:underline;font-size:20px;padding:12px 0;min-height:48px;cursor:pointer}
+
+  /* PIN screen */
+  #pinScreen{position:fixed;inset:0;background:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;z-index:10;overflow:auto}
+  #pinScreen h2{font-size:40px;margin:0 0 8px;color:var(--blue);text-align:center}
+  #pinScreen .sub{font-size:24px;margin:0 0 16px;text-align:center;max-width:640px}
+  .dots{display:flex;gap:18px;min-height:48px;margin:8px 0 20px}
+  .dot{width:36px;height:36px;border-radius:50%;border:4px solid var(--blue)}
+  .dot.on{background:var(--blue)}
+  .pad{display:grid;grid-template-columns:repeat(3,120px);gap:16px}
+  .pad button{height:110px;border-radius:20px;border:4px solid var(--blue);background:#fff;font-size:44px;font-weight:800;cursor:pointer}
+  .pad button:active{background:var(--pink)}
+  .pad .act{font-size:24px}
+  .pad .go{background:var(--blue);color:#fff}
+  .pad .go[disabled]{background:#5a5a5a;border-color:#5a5a5a}
+  #pinMsg{min-height:36px;margin-bottom:12px;font-size:24px;font-weight:800;color:var(--err);text-align:center}
+
+  [hidden]{display:none!important}
+  .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+  @media (max-width:640px){.choices{grid-template-columns:1fr}.pad{grid-template-columns:repeat(3,92px)}.pad button{height:92px}}
+</style>
+</head>
+<body>
+
+<header>
+  <a class="logo" href="https://claude.ai/artifact/54Ku9KpnNneb67haDzVzqZ" aria-label="doblexo home">doblexo</a>
+  <a class="home" href="https://claude.ai/artifact/54Ku9KpnNneb67haDzVzqZ">Home</a>
+</header>
+
+<main id="main">
+  <h1>Staff Alert</h1>
+
+  <div id="status" role="status" aria-live="polite"></div>
+
+  <form id="form" novalidate>
+    <fieldset id="typeSet" aria-describedby="typeErr">
+      <legend>What's going on? <span class="req">(required)</span></legend>
+      <div class="choices">
+        <label class="choice"><input type="radio" name="type" value="Running low on something"><span>Running low on something</span></label>
+        <label class="choice"><input type="radio" name="type" value="Equipment not working"><span>Equipment not working</span></label>
+        <label class="choice"><input type="radio" name="type" value="Customer issue"><span>Customer issue</span></label>
+        <label class="choice"><input type="radio" name="type" value="Something else"><span>Something else</span></label>
+      </div>
+      <div id="typeErr" class="fielderr" hidden>Pick what's going on.</div>
+    </fieldset>
+
+    <div class="field">
+      <label class="lbl" for="details">Details <span class="req">(required)</span></label>
+      <p class="hint" id="detailsHint">What happened? What do you need?</p>
+      <textarea id="details" name="details" aria-describedby="detailsHint detailsErr" maxlength="1000"></textarea>
+      <div id="detailsErr" class="fielderr" hidden>Add a few words about what's going on.</div>
+    </div>
+
+    <div class="field">
+      <label class="lbl" for="name">Your name <span class="req">(required)</span></label>
+      <input type="text" id="name" name="name" autocomplete="off" aria-describedby="nameErr" maxlength="60">
+      <div id="nameErr" class="fielderr" hidden>Enter your name.</div>
+    </div>
+
+    <button type="submit" class="send" id="sendBtn">Send alert</button>
+  </form>
+
+  <p><button type="button" class="linkbtn" id="changePin">Change shop PIN on this tablet</button></p>
+</main>
+
+<div id="pinScreen" role="dialog" aria-modal="true" aria-labelledby="pinTitle" hidden>
+  <h2 id="pinTitle">Enter shop PIN</h2>
+  <p class="sub" id="pinSub">This tablet will remember it.</p>
+  <div id="pinMsg" role="alert"></div>
+  <div class="dots" id="dots" aria-hidden="true"></div>
+  <p class="sr" id="pinCount" aria-live="polite"></p>
+  <div class="pad" id="pad">
+    <button type="button" data-k="1">1</button><button type="button" data-k="2">2</button><button type="button" data-k="3">3</button>
+    <button type="button" data-k="4">4</button><button type="button" data-k="5">5</button><button type="button" data-k="6">6</button>
+    <button type="button" data-k="7">7</button><button type="button" data-k="8">8</button><button type="button" data-k="9">9</button>
+    <button type="button" class="act" data-k="del" aria-label="Delete last digit">Delete</button>
+    <button type="button" data-k="0">0</button>
+    <button type="button" class="act go" data-k="ok" id="pinOk" disabled>Save</button>
+  </div>
+</div>
+
+<script>
+(function(){
+  var API = "https://script.google.com/macros/s/AKfycby7Mp5yIdmHswJW-WCnM-s3KK4Ms_5lZbmWO4cIdEP4t8ldylACpFXrfheVDps52JQ9UA/exec";
+  var PIN_KEY = "doblexo_shop_pin";
+  var DRAFT_KEY = "doblexo_alert_draft";
+  var MAX_PIN = 8, MIN_PIN = 4;
+
+  function get(k){ try{ return localStorage.getItem(k); }catch(e){ return null; } }
+  function set(k,v){ try{ localStorage.setItem(k,v); }catch(e){} }
+  function del(k){ try{ localStorage.removeItem(k); }catch(e){} }
+
+  var $ = function(id){ return document.getElementById(id); };
+  var form = $("form"), statusEl = $("status"), sendBtn = $("sendBtn");
+  var details = $("details"), nameEl = $("name");
+
+  /* ---------- PIN screen ---------- */
+  var entry = "";
+  function drawDots(){
+    var d = $("dots"); d.innerHTML = "";
+    var n = Math.max(MIN_PIN, entry.length);
+    for (var i=0;i<n;i++){ var s=document.createElement("span"); s.className="dot"+(i<entry.length?" on":""); d.appendChild(s); }
+    $("pinCount").textContent = entry.length + " digits entered";
+    $("pinOk").disabled = entry.length < MIN_PIN;
+  }
+  function showPin(message){
+    entry = ""; drawDots();
+    $("pinMsg").textContent = message || "";
+    $("pinSub").textContent = message ? "Ask a manager for the shop PIN." : "This tablet will remember it.";
+    $("pinScreen").hidden = false;
+    $("main").setAttribute("aria-hidden","true");
+    setTimeout(function(){ var b=$("pad").querySelector("button"); if(b) b.focus(); }, 50);
+  }
+  function hidePin(){
+    $("pinScreen").hidden = true;
+    $("main").removeAttribute("aria-hidden");
+  }
+  $("pad").addEventListener("click", function(e){
+    var b = e.target.closest("button"); if(!b) return;
+    var k = b.getAttribute("data-k");
+    if (k === "del") entry = entry.slice(0,-1);
+    else if (k === "ok"){
+      if (entry.length < MIN_PIN) return;
+      set(PIN_KEY, entry); entry = ""; hidePin();
+      if (pendingRetry){ pendingRetry = false; send(); }
+      return;
+    }
+    else if (entry.length < MAX_PIN) entry += k;
+    $("pinMsg").textContent = "";
+    drawDots();
+  });
+  document.addEventListener("keydown", function(e){
+    if ($("pinScreen").hidden) return;
+    if (/^[0-9]$/.test(e.key) && entry.length < MAX_PIN){ entry += e.key; drawDots(); }
+    else if (e.key === "Backspace"){ entry = entry.slice(0,-1); drawDots(); }
+    else if (e.key === "Enter" && entry.length >= MIN_PIN){ $("pinOk").click(); }
+  });
+  $("changePin").addEventListener("click", function(){ showPin(); });
+
+  /* ---------- Draft (kept if sending fails) ---------- */
+  function readForm(){
+    var t = form.querySelector("input[name=type]:checked");
+    return { type: t ? t.value : "", details: details.value.trim(), name: nameEl.value.trim() };
+  }
+  function saveDraft(){ set(DRAFT_KEY, JSON.stringify(readForm())); }
+  function loadDraft(){
+    var raw = get(DRAFT_KEY); if(!raw) return;
+    try{
+      var d = JSON.parse(raw);
+      if (d.type){ var r = form.querySelector('input[name=type][value="'+d.type.replace(/"/g,'')+'"]'); if(r) r.checked = true; }
+      details.value = d.details || ""; nameEl.value = d.name || "";
+    }catch(e){}
+  }
+  form.addEventListener("input", function(){ saveDraft(); clearErr(); });
+  form.addEventListener("change", function(){ saveDraft(); clearErr(); });
+
+  /* ---------- Messages ---------- */
+  var okTimer;
+  function showOk(){
+    clearTimeout(okTimer);
+    statusEl.innerHTML = '<div class="banner ok">✔ Message sent!</div>';
+    window.scrollTo(0,0);
+    okTimer = setTimeout(function(){ statusEl.innerHTML = ""; }, 8000);
+  }
+  function showErr(title, body){
+    clearTimeout(okTimer);
+    statusEl.innerHTML = '<div class="banner err" role="alert">' + title +
+      '<p>' + body + '</p><button type="button" class="retry" id="retryBtn">Try again</button></div>';
+    $("retryBtn").addEventListener("click", send);
+    window.scrollTo(0,0);
+  }
+  function clearErr(){
+    ["typeErr","detailsErr","nameErr"].forEach(function(id){ $(id).hidden = true; });
+    details.classList.remove("invalid"); nameEl.classList.remove("invalid");
+  }
+
+  /* ---------- Validate + send ---------- */
+  function validate(d){
+    clearErr();
+    var first = null;
+    if (!d.type){ $("typeErr").hidden = false; first = first || form.querySelector("input[name=type]"); }
+    if (!d.details){ $("detailsErr").hidden = false; details.classList.add("invalid"); first = first || details; }
+    if (!d.name){ $("nameErr").hidden = false; nameEl.classList.add("invalid"); first = first || nameEl; }
+    if (first){ first.focus(); return false; }
+    return true;
+  }
+
+  var sending = false, pendingRetry = false;
+  function looksLikePinError(data, text){
+    var s = ((data && (data.error || data.message || data.status)) || text || "").toString().toLowerCase();
+    return /pin|unauthori[sz]ed|forbidden/.test(s);
+  }
+
+  function send(){
+    if (sending) return;
+    var d = readForm();
+    if (!validate(d)) return;
+    var pin = get(PIN_KEY);
+    if (!pin){ pendingRetry = true; showPin(); return; }
+
+    saveDraft();
+    if (navigator.onLine === false){
+      showErr("No internet connection.", "Your message is saved on this tablet. Check the Wi-Fi, then tap Try again.");
+      return;
+    }
+
+    sending = true; sendBtn.disabled = true; sendBtn.textContent = "Sending…";
+    var payload = { pin: pin, shop: "doblexo", type: d.type, details: d.details, name: d.name, sentAt: new Date().toISOString() };
+    var ctrl = ("AbortController" in window) ? new AbortController() : null;
+    var timer = setTimeout(function(){ if (ctrl) ctrl.abort(); }, 20000);
+
+    // text/plain body = "simple" request, so Apps Script needs no CORS preflight
+    fetch(API, { method: "POST", body: JSON.stringify(payload), redirect: "follow", signal: ctrl ? ctrl.signal : undefined })
+      .then(function(res){ return res.text().then(function(t){ return { res: res, text: t }; }); })
+      .then(function(r){
+        var data = null; try{ data = JSON.parse(r.text); }catch(e){}
+        var ok = data ? (data.ok === true || data.success === true || data.status === "ok") : false;
+        if (ok){
+          del(DRAFT_KEY); form.reset(); clearErr(); showOk();
+          return;
+        }
+        if (looksLikePinError(data, r.text)){
+          del(PIN_KEY); pendingRetry = true;
+          statusEl.innerHTML = "";
+          showPin("That PIN didn't work. Please try again.");
+          return;
+        }
+        var why = (data && (data.error || data.message)) ? String(data.error || data.message) : "The alert system didn't accept the message.";
+        showErr("Message not sent.", escapeHtml(why) + " Your message is saved. Tap Try again, or tell a manager.");
+      })
+      .catch(function(){
+        if (navigator.onLine === false){
+          showErr("No internet connection.", "Your message is saved on this tablet. Check the Wi-Fi, then tap Try again.");
+        } else {
+          showErr("Couldn't reach the alert system.", "The internet may be down or slow. Your message is saved on this tablet. Tap Try again.");
+        }
+      })
+      .then(function(){
+        clearTimeout(timer);
+        sending = false; sendBtn.disabled = false; sendBtn.textContent = "Send alert";
+      });
+  }
+  function escapeHtml(s){ return s.replace(/[&<>"']/g, function(c){ return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]; }); }
+
+  form.addEventListener("submit", function(e){ e.preventDefault(); send(); });
+  window.addEventListener("online", function(){
+    if (statusEl.querySelector(".banner.err")) statusEl.innerHTML =
+      '<div class="banner ok" style="font-size:26px">Internet is back. Tap Send alert to try again.</div>';
+  });
+
+  /* ---------- Start ---------- */
+  loadDraft();
+  if (!get(PIN_KEY)) showPin();
+})();
+</script>
+</body>
+</html>
