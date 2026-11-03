@@ -113,7 +113,6 @@
     <button type="submit" class="send" id="sendBtn">Send alert</button>
   </form>
 
-  <p><button type="button" class="linkbtn" id="changePin">Change shop PIN on this tablet</button></p>
 </main>
 
 <div id="pinScreen" role="dialog" aria-modal="true" aria-labelledby="pinTitle" hidden>
@@ -188,7 +187,6 @@
     else if (e.key === "Backspace"){ entry = entry.slice(0,-1); drawDots(); }
     else if (e.key === "Enter" && entry.length >= MIN_PIN){ $("pinOk").click(); }
   });
-  $("changePin").addEventListener("click", function(){ showPin(); });
 
   /* ---------- Draft (kept if sending fails) ---------- */
   function readForm(){
